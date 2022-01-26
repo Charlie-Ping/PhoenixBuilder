@@ -11,6 +11,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/klauspost/compress v1.11.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
+	github.com/mattn/go-sqlite3 v1.14.10 // indirect
 	github.com/muhammadmuzzammil1998/jsonc v0.0.0-20211230184646-baf1f7156737 // indirect
 	github.com/pterm/pterm v0.12.29
 	github.com/robertkrimen/otto v0.0.0-20210614181706-373ff5438452 // indirect
