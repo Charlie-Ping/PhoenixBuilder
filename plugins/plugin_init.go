@@ -1,7 +1,6 @@
 package main
 
 import (
-	"hash/adler32"
 	"plugin_example/plugin_structs"
 	"unsafe"
 )
@@ -12,12 +11,9 @@ import (
 // 	return mainfunc(bridge)
 // }
 
-type a interface{
-	// aa()
-}
 
 func PluginInit(bridgeif unsafe.Pointer,mainref interface{}) string {
-	// code where it called.
+	// code where it is called.
 	// 只有plugin.go调用了这里.
 	// name:=mainfunc.(func(unsafe.Pointer,interface{})string)(unsafe.Pointer(conn),mainref)
 
