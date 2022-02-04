@@ -156,7 +156,7 @@ type AuthRequest struct {
 	Key string `json:"publicKey"`
 	FBToken string
 	FBVersion string
-	//IGNOREUPDATE_PLEASEMAKESUREYOUKNOWWHATITMEANS bool
+	IGNOREUPDATE_PLEASEMAKESUREYOUKNOWWHATITMEANS bool
 	// Uncomment it and the another part below to disable invalid version error
 }
 
@@ -168,7 +168,7 @@ func (client *Client) Auth(serverCode string,serverPassword string,key string,fb
 		Key:key,
 		FBToken:fbtoken,
 		FBVersion:fbversion,
-		//IGNOREUPDATE_PLEASEMAKESUREYOUKNOWWHATITMEANS: true,
+		IGNOREUPDATE_PLEASEMAKESUREYOUKNOWWHATITMEANS: true,
 	}
 	msg,err:=json.Marshal(authreq)
 	if err!=nil {
