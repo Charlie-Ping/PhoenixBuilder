@@ -329,7 +329,10 @@ func runClient(token string, version string, code string, serverPasswd string) {
 		if err != nil {
 			panic(err)
 		}
-		receiver <- pk
+		if receiver != nil {
+			receiver <- pk
+		}
+		
 		switch p := pk.(type) {
 		case *packet.PyRpc:
 			//fmt.Printf("PyRpc!\n")

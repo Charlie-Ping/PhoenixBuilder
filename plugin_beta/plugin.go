@@ -1,16 +1,22 @@
 package plugin_beta
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"phoenixbuilder/minecraft"
 	"phoenixbuilder/minecraft/protocol/packet"
+	"runtime"
 	"sync"
 )
 
 
 func StartPluginSystem (conn *minecraft.Conn) chan packet.Packet{
+	if runtime.GOOS == "windows" {
+		fmt.Println("[Plugin] Windows System doesn't support this feature, please try Linux Sys.")
+		return nil
+	}
 	receiver := make(chan packet.Packet)
 	
 	bridge := PluginBridgeImpl{sessionConnection: conn}
@@ -30,7 +36,9 @@ func StartPluginSystem (conn *minecraft.Conn) chan packet.Packet{
 		manager.Logger.Println("Plugin system crashed")
 	}
 	go func ()  {
-		manager.Notify(<-receiver)
+		for {
+			manager.Notify(<-receiver)
+		}
 	}()
 	return receiver
 
