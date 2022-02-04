@@ -12,13 +12,18 @@ import (
 
 func StartPluginSystem (conn *minecraft.Conn) chan packet.Packet{
 	receiver := make(chan packet.Packet)
+	
+	bridge := PluginBridgeImpl{sessionConnection: conn}
 	manager := PluginManager {
 		conn: conn,
 		Logger: &log.Logger{},
 		regMu: sync.RWMutex{},
 		pluginPriority: []IPlugin{},
 		plugins: map[IPlugin]*Plugin{},
+		Method: &bridge,
+		
 	}
+	
 	manager.Logger.SetPrefix("[PLUGIN]")
 	err := manager.loadPlugins()
 	if err != nil {
