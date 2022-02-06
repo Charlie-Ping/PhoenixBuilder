@@ -1,13 +1,15 @@
 package plugin_beta
 
 import (
-	"phoenixbuilder/minecraft"
-	"phoenixbuilder/minecraft/protocol/packet"
-	"phoenixbuilder/fastbuilder/types"
-	"phoenixbuilder/fastbuilder/command"
 	"phoenixbuilder/fastbuilder/builder"
+	"phoenixbuilder/fastbuilder/command"
 	"phoenixbuilder/fastbuilder/function"
 	"phoenixbuilder/fastbuilder/plugin_structs"
+	"phoenixbuilder/fastbuilder/types"
+	"phoenixbuilder/minecraft"
+	"phoenixbuilder/minecraft/protocol/login"
+	"phoenixbuilder/minecraft/protocol/packet"
+
 	"github.com/google/uuid"
 )
 
@@ -16,76 +18,84 @@ type PluginBridgeImpl struct {
 }
 
 func (*PluginBridgeImpl) ConvertFunctionChainItemList(list map[string]plugin_structs.FunctionChainItem) interface{} {
-	outmap:=make(map[string]*function.FunctionChainItem)
+	outmap := make(map[string]*function.FunctionChainItem)
 	for key, val := range list {
-		mw:=function.FunctionChainItem(val)
-		outmap[key]=&mw
+		mw := function.FunctionChainItem(val)
+		outmap[key] = &mw
 	}
 	return outmap
 }
 
+func (br *PluginBridgeImpl) GetClientData() login.ClientData {
+	return br.sessionConnection.ClientData()
+}
+
+func (br *PluginBridgeImpl) GetGameData() minecraft.GameData {
+	return br.sessionConnection.GameData()
+}
+
 func (*PluginBridgeImpl) RegisterBuilder(name string, function_cont func(config plugin_structs.MainConfig, blc chan *plugin_structs.Module) error) bool {
-	_, ahas:=builder.Builder[name]
+	_, ahas := builder.Builder[name]
 	if ahas {
 		return false
 	}
-	builder.Builder[name]=func(config *types.MainConfig, blc chan *types.Module) error {
-		conchan:=make(chan *plugin_structs.Module)
+	builder.Builder[name] = func(config *types.MainConfig, blc chan *types.Module) error {
+		conchan := make(chan *plugin_structs.Module)
 		go func() {
 			for {
-				curblock, ok:=<-conchan
+				curblock, ok := <-conchan
 				if !ok {
 					break
 				}
-				convcbdata:=types.CommandBlockData(*curblock.CommandBlockData)
-				blc<-&types.Module {
-					Block: &types.Block {
-						Name:curblock.Block.Name,
-						Data:curblock.Block.Data,
+				convcbdata := types.CommandBlockData(*curblock.CommandBlockData)
+				blc <- &types.Module{
+					Block: &types.Block{
+						Name: curblock.Block.Name,
+						Data: curblock.Block.Data,
 					},
 					CommandBlockData: &convcbdata,
 					//Entity: (*types.Entity)(curblock.Entity),
-					Point: types.Position {
+					Point: types.Position{
 						curblock.Point.X,
 						curblock.Point.Y,
 						curblock.Point.Z,
 					},
 				}
 			}
-		} ()
-		err:=function_cont(plugin_structs.MainConfig{
+		}()
+		err := function_cont(plugin_structs.MainConfig{
 			Execute: config.Execute,
-			Block: &plugin_structs.ConstBlock {
+			Block: &plugin_structs.ConstBlock{
 				Name: config.Block.Name,
 				Data: config.Block.Data,
 			},
-			OldBlock: &plugin_structs.ConstBlock {
+			OldBlock: &plugin_structs.ConstBlock{
 				Name: config.OldBlock.Name,
 				Data: config.OldBlock.Data,
 			},
-			End: plugin_structs.Position {
+			End: plugin_structs.Position{
 				config.End.X,
 				config.End.Y,
 				config.End.Z,
 			},
-			Position: plugin_structs.Position {
+			Position: plugin_structs.Position{
 				config.Position.X,
 				config.Position.Y,
 				config.Position.Z,
 			},
-			Radius: config.Radius,
-			Length: config.Length,
-			Width: config.Width,
-			Height: config.Height,
-			Method: config.Method,
-			OldMethod: config.OldMethod,
-			Facing: config.Facing,
-			Path: config.Path,
-			Shape: config.Shape,
-			ExcludeCommands: config.ExcludeCommands,
+			Radius:             config.Radius,
+			Length:             config.Length,
+			Width:              config.Width,
+			Height:             config.Height,
+			Method:             config.Method,
+			OldMethod:          config.OldMethod,
+			Facing:             config.Facing,
+			Path:               config.Path,
+			Shape:              config.Shape,
+			ExcludeCommands:    config.ExcludeCommands,
 			InvalidateCommands: config.InvalidateCommands,
-			Strict: config.Strict,
-		},conchan)
+			Strict:             config.Strict,
+		}, conchan)
 		close(conchan)
 		return err
 	}
@@ -93,12 +103,12 @@ func (*PluginBridgeImpl) RegisterBuilder(name string, function_cont func(config 
 }
 
 func (*PluginBridgeImpl) RegisterFunction(function_cont plugin_structs.Function) {
-	funcco:=function.Function(function_cont)
+	funcco := function.Function(function_cont)
 	function.RegisterFunction(&funcco)
 }
 
-func (*PluginBridgeImpl) RegisterEnum(desc string, parser func(string)byte, inv byte) int {
-	return function.RegisterEnum(desc,parser,inv)
+func (*PluginBridgeImpl) RegisterEnum(desc string, parser func(string) byte, inv byte) int {
+	return function.RegisterEnum(desc, parser, inv)
 }
 
 func (br *PluginBridgeImpl) Tellraw(message string) error {
@@ -106,45 +116,45 @@ func (br *PluginBridgeImpl) Tellraw(message string) error {
 }
 
 func (br *PluginBridgeImpl) SendChat(content string) error {
-	return command.SendChat(content,br.sessionConnection)
+	return command.SendChat(content, br.sessionConnection)
 }
 
 func (br *PluginBridgeImpl) SendCommand(commandstr string) error {
-	return command.SendSizukanaCommand(commandstr,br.sessionConnection)
+	return command.SendSizukanaCommand(commandstr, br.sessionConnection)
 }
 
-func (br *PluginBridgeImpl) SendCommandCB(cmd string, cb func([]plugin_structs.CommandOutputMessage,string)) {
-	wchan:=make(chan *packet.CommandOutput)
+func (br *PluginBridgeImpl) SendCommandCB(cmd string, cb func([]plugin_structs.CommandOutputMessage, string)) {
+	wchan := make(chan *packet.CommandOutput)
 	ud, _ := uuid.NewUUID()
 	command.UUIDMap.Store(ud.String(), wchan)
 	command.SendCommand(cmd, ud, br.sessionConnection)
-	resp:=<-wchan
+	resp := <-wchan
 	close(wchan)
-	unk:=resp.DataSet
-	arr:=make([]plugin_structs.CommandOutputMessage,len(resp.OutputMessages))
-	for i,c:= range resp.OutputMessages {
-		arr[i]=plugin_structs.CommandOutputMessage(c)
+	unk := resp.DataSet
+	arr := make([]plugin_structs.CommandOutputMessage, len(resp.OutputMessages))
+	for i, c := range resp.OutputMessages {
+		arr[i] = plugin_structs.CommandOutputMessage(c)
 	}
-	cb(arr,unk)
+	cb(arr, unk)
 }
 
-func (br *PluginBridgeImpl) SendWSCommandCB(cmd string, cb func([]plugin_structs.CommandOutputMessage,string)) {
-	wchan:=make(chan *packet.CommandOutput)
+func (br *PluginBridgeImpl) SendWSCommandCB(cmd string, cb func([]plugin_structs.CommandOutputMessage, string)) {
+	wchan := make(chan *packet.CommandOutput)
 	ud, _ := uuid.NewUUID()
 	command.UUIDMap.Store(ud.String(), wchan)
 	command.SendWSCommand(cmd, ud, br.sessionConnection)
-	resp:=<-wchan
+	resp := <-wchan
 	close(wchan)
-	unk:=resp.DataSet
-	arr:=make([]plugin_structs.CommandOutputMessage,len(resp.OutputMessages))
-	for i,c:= range resp.OutputMessages {
-		arr[i]=plugin_structs.CommandOutputMessage(c)
+	unk := resp.DataSet
+	arr := make([]plugin_structs.CommandOutputMessage, len(resp.OutputMessages))
+	for i, c := range resp.OutputMessages {
+		arr[i] = plugin_structs.CommandOutputMessage(c)
 	}
-	cb(arr,unk)
+	cb(arr, unk)
 }
 
-var ChatEventListeners []func(string,string) = []func(string,string){}
+var ChatEventListeners []func(string, string) = []func(string, string){}
 
 func (br *PluginBridgeImpl) SubscribeChat(cb func(string, string)) {
-	ChatEventListeners=append(ChatEventListeners, cb)
+	ChatEventListeners = append(ChatEventListeners, cb)
 }

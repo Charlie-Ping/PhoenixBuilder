@@ -5,6 +5,7 @@ import (
 	"phoenixbuilder/fastbuilder/types"
 	"phoenixbuilder/minecraft"
 	"time"
+
 	//"github.com/google/uuid"
 	"encoding/json"
 	"strings"
@@ -23,9 +24,9 @@ func TellRawRequest(target types.Target, lines ...string) string {
 	var items []TellrawItem
 	for _, text := range lines {
 		msg := fmt.Sprintf("%v %v", now, strings.Replace(text, "schematic", "sc***atic", -1))
-		items=append(items,TellrawItem{Text:msg})
+		items = append(items, TellrawItem{Text: msg})
 	}
-	final := &TellrawStruct {
+	final := &TellrawStruct{
 		RawText: items,
 	}
 	content, _ := json.Marshal(final)
@@ -38,7 +39,7 @@ func Tellraw(conn *minecraft.Conn, lines ...string) error {
 	fmt.Printf("%s\n", lines[0])
 	//return nil
 	msg := strings.Replace(lines[0], "schematic", "sc***atic", -1)
-	msg =  strings.Replace(msg, ".", "．", -1)
+	msg = strings.Replace(msg, ".", "．", -1)
 	// Netease set .bdx, .schematic, .mcacblock, etc as blocked words
 	// So we should replace half-width points w/ full-width points to avoid being
 	// blocked
@@ -49,8 +50,8 @@ func Tellraw(conn *minecraft.Conn, lines ...string) error {
 func RawTellRawRequest(target types.Target, line string) string {
 	var items []TellrawItem
 	msg := strings.Replace(line, "schematic", "sc***atic", -1)
-	items=append(items,TellrawItem{Text:msg})
-	final := &TellrawStruct {
+	items = append(items, TellrawItem{Text: msg})
+	final := &TellrawStruct{
 		RawText: items,
 	}
 	content, _ := json.Marshal(final)
@@ -60,6 +61,6 @@ func RawTellRawRequest(target types.Target, line string) string {
 
 func WorldChatTellraw(conn *minecraft.Conn, sender string, content string) error {
 	fmt.Printf("W <%s> %s\n", sender, content)
-	str:=fmt.Sprintf("§eW §r<%s> %s",sender,content)
+	str := fmt.Sprintf("§eW §r<%s> %s", sender, content)
 	return SendSizukanaCommand(RawTellRawRequest(types.AllPlayers, str), conn)
 }

@@ -7,33 +7,35 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
+
+	// "os"
+	"path"
 	"path/filepath"
-	"phoenixbuilder/minecraft"
-	"phoenixbuilder/minecraft/protocol/packet"
 	expand "phoenixbuilder/fastbuilder/plugin_structs"
+	"phoenixbuilder/minecraft"
+	"phoenixbuilder/minecraft/protocol/login"
+	"phoenixbuilder/minecraft/protocol/packet"
+	"plugin"
 	"sort"
 	"sync"
-	"plugin"
 )
 
 // PacketSender: plugin -> main
 // PacketReceiver: main -> plugin
 
 type Plugin struct {
-	singleton     bool
-	block         bool // true if it blocks packets.
-	priority      int
+	singleton bool
+	block     bool // true if it blocks packets.
+	priority  int
 	handleNum int64
-	name          string
+	name      string
 
 	// handleWg sync.WaitGroup
-	
+
 	// locked when PluginManager Register and do nothing when PluginManager notify(packets)
 	regMu sync.RWMutex
 	// plugins get it and push Packet to main process.
 	packetReceivers []chan packet.Packet
-
 
 	// rule func(pk *packet.Packet) bool
 }
@@ -47,10 +49,28 @@ type IPlugin interface {
 	Rule(packet.Packet) bool
 }
 
+type ExpandPluginBridge interface {
+	GetGameData() minecraft.GameData
+	GetClientData() login.ClientData
+}
+
+type ExpandPluginBridgeImpl struct {
+	conn *minecraft.Conn
+}
+
+func (br *ExpandPluginBridgeImpl) GetGameData() minecraft.GameData {
+	return br.conn.GameData()
+}
+
+func (br *ExpandPluginBridgeImpl) GetClientData() login.ClientData {
+	return br.conn.ClientData()
+}
+
 type PluginManager struct {
-	Method 		   expand.PluginBridge
+	Method         expand.PluginBridge
+	Expand         ExpandPluginBridge
 	conn           *minecraft.Conn
-	Logger         *log.Logger
+	Logger         log.Logger
 	regMu          sync.RWMutex
 	pluginPriority []IPlugin
 	plugins        map[IPlugin]*Plugin
@@ -58,25 +78,37 @@ type PluginManager struct {
 
 // DON'T use it in your plugin
 func (plm *PluginManager) Notify(pk packet.Packet) {
-	
+	fmt.Println("start notify pk!!")
+	fmt.Println("\n")
+	fmt.Println(plm.plugins)
 	for iplugin, plugin := range plm.plugins {
+		fmt.Println(iplugin, "\n")
+		fmt.Println(plugin.packetReceivers)
 		for _, recv := range plugin.packetReceivers {
+
 			recv <- pk
 		}
+
 		if !iplugin.Rule(pk) {
 			continue
 		}
+
 		if plugin.singleton && plugin.handleNum >= 1 {
 			continue
 		}
+		fmt.Print("authority access!")
 		plugin.handleNum += 1
-		go plugin.WaitGroupDecorator(iplugin.Handler)(plm, pk)
+		fmt.Println("chat this!")
+		fmt.Println(pk)
+		// handler := plugin.WaitGroupDecorator(iplugin.Handler)
+		handler := iplugin.Handler
+		fmt.Println("handler: ", handler)
+		go handler(plm, pk)
 		if plugin.block {
 			return
 		}
-	} 
+	}
 }
-
 
 // copied from /phoenixbuilder/fastbuilder/plugin/plugin.go
 func (plm *PluginManager) loadPlugins() error {
@@ -85,26 +117,33 @@ func (plm *PluginManager) loadPlugins() error {
 			plm.Logger.Printf("[WARNING] Failed to load plugins completely: %s", err)
 		}
 	}()
-	plugindir, err := loadPluginDir()
-	
-	err = os.MkdirAll(plugindir, 0755)
-	if err != nil {
-		plm.Logger.Panicln("Failed to mkdir")
-		return err
-	}
+	fmt.Println("I`m loading...")
+	pluginsdir, err := loadPluginDir()
+	fmt.Println("1")
+	// if err != nil {
+	// 	plm.Logger.Println("Can't find plugin dir,will mkdir then.")
+	// }
+	// err = os.MkdirAll(pluginsdir, 0755)
+	// if err != nil {
+	// 	plm.Logger.Panicln("Failed to mkdir")
+	// 	return err
+	// }
 
-	plugins, err := ioutil.ReadDir(plugindir)
-	if err != nil {
-		plm.Logger.Panicln("Failed to read direction.")
-		return err
-	}
-
+	// plugins, err := ioutil.ReadDir(pluginsdir)
+	// if err != nil {
+	// 	plm.Logger.Panicln("Failed to read direction.")
+	// 	return err
+	// }
+	// plugins, err := ioutil.ReadDir("/home/charlie/Code/PhoenixBuilder")
+	pluginsdir = "/home/charlie/Code/PhoenixBuilder"
+	plugins, err := ioutil.ReadDir("/home/charlie/Code/PhoenixBuilder")
+	fmt.Println(plugins)
 	for _, plugindir := range plugins {
-		path := fmt.Sprintf("%s/%s", plugins, plugindir.Name())
+		path := path.Join(pluginsdir, plugindir.Name())
 		if filepath.Ext(path) != ".so" {
 			continue
 		}
-
+		plm.Logger.Println("loading!")
 		err := plm.initPlugin(path)
 		if err != nil {
 			plm.Logger.Printf("Failed to load plugin: %s", path)
@@ -125,17 +164,21 @@ func sortPlugins(plm *PluginManager) {
 }
 
 func (plm *PluginManager) initPlugin(path string) error {
+	fmt.Println("initPlugin!")
 	pl, err := plugin.Open(path)
 	if err != nil {
+		fmt.Println("Open Err:", err)
 		return err
 	}
 	plug, err := pl.Lookup("Plugin")
 	if err != nil {
+		fmt.Println("Lookup Err:", err)
 		return err
 	}
-	plugin := *plug.(*IPlugin)
-
+	plugin := plug.(IPlugin)
+	fmt.Println("Try to init it.")
 	plugin.Init(plm)
+	fmt.Println("Init ok! \n", plm.plugins)
 	return err
 
 }
@@ -153,13 +196,13 @@ func (plm *PluginManager) RegisterPlugin(ipl IPlugin,
 	priority int,
 	name string,
 	// rule func()
-	) {
-	pl := Plugin {
+) {
+	pl := Plugin{
 		handleNum: 0,
-		singleton:     singleton,
-		block:         block,
-		priority:      priority,
-		name:          name,
+		singleton: singleton,
+		block:     block,
+		priority:  priority,
+		name:      name,
 		// rule:          rule,
 	}
 	plm.regMu.RLock()
@@ -174,17 +217,20 @@ func (plm *PluginManager) RegisterPlugin(ipl IPlugin,
 
 func (plm *PluginManager) ReadPacketFor(regipl IPlugin) packet.Packet {
 	receiver := plm.registerChan(regipl)
+	pk := <-receiver
+	fmt.Println(pk)
+	// It seems that channles can still be received after being closed.
 	close(receiver)
 	plm.unregisterChan(regipl, receiver)
-	// It seems that channles can still be received after being closed.
-	return <- receiver
+	return pk
 }
 
-func(plm *PluginManager) unregisterChan (regipl IPlugin, receiver chan packet.Packet) {
+func (plm *PluginManager) unregisterChan(regipl IPlugin, receiver chan packet.Packet) {
 	rcvers := plm.plugins[regipl].packetReceivers
-	for index, recver := range rcvers{
+	for index, recver := range rcvers {
 		if recver == receiver {
-			rcvers = append(rcvers[:index], rcvers[index+1:]...)
+			plm.plugins[regipl].packetReceivers = append(rcvers[:index], rcvers[index+1:]...)
+			return
 		}
 	}
 }
@@ -199,13 +245,13 @@ func (plm *PluginManager) registerChan(regipl IPlugin) chan packet.Packet {
 	return receiver
 }
 
-func (plm *PluginManager) WritePacket(pk *packet.Packet) {
-	plm.conn.WritePacket(*pk)
+func (plm *PluginManager) WritePacket(pk packet.Packet) {
+	plm.conn.WritePacket(pk)
 }
 
 // It decorates Handler of Plugin to record the number of functions running.
-func (pl *Plugin) WaitGroupDecorator( fn func(*PluginManager, packet.Packet)) func(*PluginManager, packet.Packet){
-	return func (m *PluginManager, pk packet.Packet)  {
+func (pl *Plugin) WaitGroupDecorator(fn func(*PluginManager, packet.Packet)) func(*PluginManager, packet.Packet) {
+	return func(m *PluginManager, pk packet.Packet) {
 		fn(m, pk)
 		pl.handleNum -= 1
 	}

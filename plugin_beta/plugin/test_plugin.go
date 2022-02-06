@@ -1,47 +1,59 @@
-package test_plugin
+package main
 
+// go build --buildmode=plugin -gcflags="all=-N -l" ./plugin_beta/plugin/test_plugin.go
 import (
+	"fmt"
 	"phoenixbuilder/minecraft/protocol/packet"
 	conn "phoenixbuilder/plugin_beta"
 )
 
 type SingleQABot struct {
 	message *packet.Text
-	user string
+	user    string
 }
 
 func (bot SingleQABot) Rule(pk packet.Packet) bool {
 	switch pk.(type) {
-	case  *packet.Text:
+	case *packet.Text:
+		fmt.Println("packet coming!")
 		return true
-	default: 
+	default:
 		return false
 	}
 }
 
 func (bot *SingleQABot) Init(conn *conn.PluginManager) {
+	fmt.Println("init!")
+	conn.Logger.Println("init!")
 	conn.RegisterPlugin(bot, true, true, 5, "SingleQABot")
 }
 
 func (bot *SingleQABot) Handler(conn *conn.PluginManager, pk packet.Packet) {
+	// conn.Method.GetClientData
+	fmt.Println("I receive :", pk)
+	conn.Logger.Println("Handler!")
 	bot.message = pk.(*packet.Text)
-	
+
 	if bot.message.Message != "留言" {
 		return
 	}
 	bot.user = bot.message.SourceName
-	conn.Method.Tellraw("您的留言内容?")
+	fmt.Println("send chat: what?")
+	conn.Method.SendChat("您的留言内容?")
 	for {
-		bot.message = conn.ReadPacketFor(bot).(*packet.Text)
+		imsg := conn.ReadPacketFor(bot)
+		fmt.Println(imsg)
+		message := imsg.(*packet.Text)
+
+		bot.message = message
 		if bot.message.SourceName != bot.user {
 			continue
 		} else {
+			conn.Method.SendChat(bot.message.Message)
 			conn.Logger.Println(bot.message)
 			return
 		}
 	}
 }
-
-
 
 var Plugin SingleQABot
