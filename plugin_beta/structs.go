@@ -59,32 +59,20 @@ type PluginManager struct {
 }
 
 // DON'T use it in your plugin
-func (plm *PluginManager) Notify(pk packet.Packet) {
-	fmt.Println("start notify pk!!")
-	fmt.Println("\n")
-	fmt.Println(plm.plugins)
+func (plm *PluginManager) notify(pk packet.Packet) {
 	for iplugin, plugin := range plm.plugins {
-		fmt.Println(iplugin, "\n")
-		fmt.Println(plugin.packetReceivers)
 		for _, recv := range plugin.packetReceivers {
-
 			recv <- pk
 		}
-
 		if !iplugin.Rule(pk) {
 			continue
 		}
-
 		if plugin.singleton && plugin.handleNum >= 1 {
 			continue
 		}
-		fmt.Print("authority access!")
 		plugin.handleNum += 1
-		fmt.Println("chat this!")
-		fmt.Println(pk)
-		// handler := plugin.WaitGroupDecorator(iplugin.Handler)
-		handler := iplugin.Handler
-		fmt.Println("handler: ", handler)
+		handler := plugin.WaitGroupDecorator(iplugin.Handler)
+		// handler := iplugin.Handler
 		go handler(plm, pk)
 		if plugin.block {
 			return

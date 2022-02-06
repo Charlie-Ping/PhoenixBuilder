@@ -18,7 +18,6 @@ func StartPluginSystem(conn *minecraft.Conn) chan packet.Packet {
 		fmt.Println("[Plugin] Windows System doesn't support this feature, please try Linux Sys.")
 		return nil
 	}
-	fmt.Println("Start plugin system!")
 	receiver := make(chan packet.Packet)
 
 	bridge := PluginBridgeImpl{sessionConnection: conn}
@@ -34,26 +33,22 @@ func StartPluginSystem(conn *minecraft.Conn) chan packet.Packet {
 	logFile, err := os.OpenFile(fp, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0766)
 
 	manager.Logger = *log.New(logFile, "[PLUGIN]", 19)
-	fmt.Println("start loadPlugins!")
 	err = manager.loadPlugins()
 	if err != nil {
 		fmt.Println("Plugin system crashed")
 		manager.Logger.Println("Plugin system crashed")
 	}
-	fmt.Println("load succeed!")
 	go func() {
-		fmt.Println("start recv pkgs!")
 		for {
 			pk := <-receiver
 			if plk, ok := pk.(*packet.Text); ok {
 				fmt.Println(plk.Message)
-				manager.Notify(pk)
+				manager.notify(pk)
 			}
 
 			// manager.Notify(<-receiver)
 		}
 	}()
-	fmt.Printf("Receiver: %v", receiver)
 	return receiver
 
 }
