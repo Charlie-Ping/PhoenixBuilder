@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	expand "phoenixbuilder/fastbuilder/plugin_structs"
 	"phoenixbuilder/minecraft"
-	"phoenixbuilder/minecraft/protocol/login"
 	"phoenixbuilder/minecraft/protocol/packet"
 	"plugin"
 	"sort"
@@ -47,23 +46,6 @@ type IPlugin interface {
 	// assert pk and return ok. It should be simplified.
 	// Should it be a single function instead of a method?
 	Rule(packet.Packet) bool
-}
-
-type ExpandPluginBridge interface {
-	GetGameData() minecraft.GameData
-	GetClientData() login.ClientData
-}
-
-type ExpandPluginBridgeImpl struct {
-	conn *minecraft.Conn
-}
-
-func (br *ExpandPluginBridgeImpl) GetGameData() minecraft.GameData {
-	return br.conn.GameData()
-}
-
-func (br *ExpandPluginBridgeImpl) GetClientData() login.ClientData {
-	return br.conn.ClientData()
 }
 
 type PluginManager struct {
