@@ -1,6 +1,5 @@
 package main
 
-// go build --buildmode=plugin -gcflags="all=-N -l" ./plugin_beta/plugin/test_plugin.go
 import (
 	"fmt"
 	"phoenixbuilder/minecraft/protocol/packet"

@@ -87,9 +87,7 @@ type ChatSettings struct {
 
 // directory,
 func ReadSettings(fp string) (ChatSettings, error) {
-	if !PathExist(fp) {
-		_ = os.Mkdir(fp, os.ModePerm)
-	}
+	_ = os.MkdirAll(fp, os.ModePerm)
 	fp = path.Join(fp, "/cqchat_config.yml")
 	if !PathExist(fp) {
 		writeConf(fp)

@@ -25,6 +25,7 @@ var upgrader = websocket.Upgrader{
 
 type cqchat struct {
 	conf ChatSettings
+	conn *conn.PluginManager
 }
 
 func (cq *cqchat) Rule(pk packet.Packet) bool {
@@ -34,6 +35,7 @@ func (cq *cqchat) Rule(pk packet.Packet) bool {
 }
 
 func (cq *cqchat) Init(conn *conn.PluginManager) {
+	cq.conn = conn
 	conn.RegisterPlugin(cq, true, false, 99, "CQChat")
 	confdir, err := os.UserHomeDir()
 	if err != nil {
@@ -41,10 +43,25 @@ func (cq *cqchat) Init(conn *conn.PluginManager) {
 	}
 	confdir = path.Join(confdir, ".config/fastbuilder/plugins_beta")
 	cq.conf, err = ReadSettings(confdir)
+
 }
 
 func (cq *cqchat) Handler(conn *conn.PluginManager, pk packet.Packet) {
+	conn.Logger.Println("Start")
+	http.HandleFunc("/fastbuilder/cqchat", cq.handleFunc)
+	err := http.ListenAndServe(cq.conf.Port, nil)
+	if err != nil {
+		cq.conn.Logger.Panicln("cqchat监听异常, 将重新尝试.")
+		cq.Handler(conn, pk)
+	}
+}
 
+func (cq *cqchat) handleFunc(w http.ResponseWriter, r *http.Request) {
+	cqconn, _ := upgrader.Upgrade(w, r, nil) //websocket链接通道
+	// 这个conn是和gocq连接的
+	// 所有和游戏内的conn连接(发包)的操作全部在main.go里
+	go cq.receiveMessage(cq.conn, cqconn)
+	go cq.sendMessage(cq.conn, cqconn)
 }
 
 func (cq *cqchat) receiveMessage(conn *conn.PluginManager, cqconn *websocket.Conn) {
