@@ -14,14 +14,13 @@ import (
 )
 
 func StartPluginSystem(conn *minecraft.Conn) chan packet.Packet {
-	fmt.Println("there1")
-	fp, _ := loadPluginDir()
-	print(2)
-	os.MkdirAll(fp, 0755)
 
-	logFile, err := os.OpenFile(fp, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0766)
-	fp = path.Join(fp, (time.Now().Format("2018-01-02") + ".log"))
-	print(3)
+	fp, _ := loadPluginDir()
+
+	os.MkdirAll(fp, 0755)
+	logpath := path.Join(fp, (time.Now().Format("2018-01-02") + ".log"))
+	logFile, err := os.OpenFile(logpath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0766)
+
 	if err != nil {
 		fmt.Println(err)
 		return nil
@@ -32,13 +31,13 @@ func StartPluginSystem(conn *minecraft.Conn) chan packet.Packet {
 		}
 		logFile.Close()
 	}()
-	print(4)
+
 	if runtime.GOOS == "windows" {
 		fmt.Println("[Plugin] Windows System doesn't support this feature, please try Linux Sys.")
 		return nil
 	}
 	receiver := make(chan packet.Packet)
-	print(5)
+
 	bridge := PluginBridgeImpl{sessionConnection: conn}
 	manager := PluginManager{
 		conn:           conn,

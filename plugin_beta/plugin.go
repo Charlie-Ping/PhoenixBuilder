@@ -92,6 +92,7 @@ func (plm *PluginManager) loadPlugins() error {
 	if err != nil {
 		plm.Logger.Println("Can't find plugin dir,will mkdir then.")
 	}
+
 	err = os.MkdirAll(pluginsdir, 0755)
 	if err != nil {
 		plm.Logger.Panicln("Failed to mkdir")
@@ -103,17 +104,15 @@ func (plm *PluginManager) loadPlugins() error {
 		plm.Logger.Panicln("Failed to read direction.")
 		return err
 	}
-	// plugins, err := ioutil.ReadDir("/home/charlie/Code/PhoenixBuilder")
-	// pluginsdir = "/home/charlie/Code/PhoenixBuilder"
-	// plugins, err := ioutil.ReadDir("/home/charlie/Code/PhoenixBuilder")
-	fmt.Println(plugins)
+
 	for _, plugindir := range plugins {
 		path := path.Join(pluginsdir, plugindir.Name())
 		if filepath.Ext(path) != ".so" {
 			continue
 		}
-		fmt.Println("loading:", plugindir)
-		plm.Logger.Println("loading!")
+		fmt.Println("plugin loading:", plugindir.Name())
+		plm.Logger.Println("plugin loading:", plugindir.Name())
+		fmt.Println(path)
 		err := plm.initPlugin(path)
 		if err != nil {
 			plm.Logger.Printf("Failed to load plugin: %s", path)

@@ -12,11 +12,13 @@ import (
 func writeConf(confp string) {
 	conf := []byte(`
 # cq-chatlogger 配置
+# 注意冒号后面要跟个空格, 下同
 # 正向连接地址. 一般情况请选择默认.
 address: "127.0.0.1:5555"
 
 # 游戏内的消息将默认转发至哪个群. 如果为空, 则默认不转发, 只能通过指定别名发送指定群消息.
-default_group_id: 961748506
+
+default_group_id: 12345678
 
 # 给每个群设置别名来指定群聊发送消息.
 # 例如按照如下配置, 在游戏中发送此消息是合法的:
@@ -58,7 +60,7 @@ command_prefix: "/"
 
 # 哪些用户可以在qq中使用命令. 填入qq号. 示例配置:
 # filtered_user_id: [123456789, 987654321]
-super_user_id: [1758489207, ]
+super_user_id: []
 
 # 过滤来自qq的消息交由go-cqhttp处理.
 # 详见https://docs.go-cqhttp.org/guide/eventfilter.html

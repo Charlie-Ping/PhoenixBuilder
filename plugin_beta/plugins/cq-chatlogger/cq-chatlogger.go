@@ -111,3 +111,5 @@ func (cq *cqchat) sendMessage(conn *conn.PluginManager, cqconn *websocket.Conn) 
 		}
 	}
 }
+
+var Plugin cqchat
