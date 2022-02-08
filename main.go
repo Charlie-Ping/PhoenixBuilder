@@ -134,13 +134,11 @@ func main() {
 }
 
 func runShellClient(token string, version string) {
-	// todelete
-	// code, serverPasswd, err := getRentalServerCode()
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
-	code, serverPasswd := "40445953", ""
+	code, serverPasswd, err := getRentalServerCode()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	runClient(token, version, code, serverPasswd)
 }
 
