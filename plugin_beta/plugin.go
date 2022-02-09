@@ -50,7 +50,7 @@ type IPlugin interface {
 
 type PluginManager struct {
 	Method         expand.PluginBridge
-	Expand         ExpandPluginBridge
+	Expand         ExpandPluginBridgeImpl
 	conn           *minecraft.Conn
 	Logger         log.Logger
 	regMu          sync.RWMutex
@@ -58,16 +58,28 @@ type PluginManager struct {
 	plugins        map[IPlugin]*Plugin
 }
 
-// DON'T use it in your plugin
 func (plm *PluginManager) notify(pk packet.Packet) {
+	// fmt.Println("notify !")
+
 	for iplugin, plugin := range plm.plugins {
-		for _, recv := range plugin.packetReceivers {
+		plugin.regMu.Lock()
+
+		for i, recv := range plugin.packetReceivers {
+			// _, is_close := <-recv
+			// if is_close {
+			// 	fmt.Println("has been closed!")
+			// 	continue
+			// }
 			recv <- pk
+			close(recv)
+			plugin.packetReceivers = append(plugin.packetReceivers[:i], plugin.packetReceivers[i+1:]...)
 		}
 		if !iplugin.Rule(pk) {
+			plugin.regMu.Unlock()
 			continue
 		}
 		if plugin.singleton && plugin.handleNum >= 1 {
+			plugin.regMu.Unlock()
 			continue
 		}
 		plugin.handleNum += 1
@@ -75,19 +87,22 @@ func (plm *PluginManager) notify(pk packet.Packet) {
 		// handler := iplugin.Handler
 		go handler(plm, pk)
 		if plugin.block {
+			plugin.regMu.Unlock()
 			return
 		}
+		plugin.regMu.Unlock()
 	}
 }
 
 // copied from /phoenixbuilder/fastbuilder/plugin/plugin.go
 func (plm *PluginManager) loadPlugins() error {
+	// fmt.Println(plm.conn.IdentityData())
 	defer func() {
 		if err := recover(); err != nil {
 			plm.Logger.Printf("[WARNING] Failed to load plugins completely: %s", err)
 		}
 	}()
-	fmt.Println("I`m loading...")
+	// fmt.Println("I`m loading...")
 	pluginsdir, err := loadPluginDir()
 	if err != nil {
 		plm.Logger.Println("Can't find plugin dir,will mkdir then.")
@@ -112,7 +127,6 @@ func (plm *PluginManager) loadPlugins() error {
 		}
 		fmt.Println("plugin loading:", plugindir.Name())
 		plm.Logger.Println("plugin loading:", plugindir.Name())
-		fmt.Println(path)
 		err := plm.initPlugin(path)
 		if err != nil {
 			plm.Logger.Printf("Failed to load plugin: %s", path)
@@ -133,7 +147,6 @@ func sortPlugins(plm *PluginManager) {
 }
 
 func (plm *PluginManager) initPlugin(path string) error {
-	fmt.Println("initPlugin!")
 	pl, err := plugin.Open(path)
 	if err != nil {
 		fmt.Println("Open Err:", err)
@@ -145,9 +158,8 @@ func (plm *PluginManager) initPlugin(path string) error {
 		return err
 	}
 	plugin := plug.(IPlugin)
-	fmt.Println("Try to init it.")
 	plugin.Init(plm)
-	fmt.Println("Init ok! \n", plm.plugins)
+
 	return err
 
 }
@@ -174,8 +186,8 @@ func (plm *PluginManager) RegisterPlugin(ipl IPlugin,
 		name:      name,
 		// rule:          rule,
 	}
-	plm.regMu.RLock()
-	defer plm.regMu.RUnlock()
+	plm.regMu.Lock()
+	defer plm.regMu.Unlock()
 	plm.plugins[ipl] = &pl
 }
 
@@ -187,29 +199,15 @@ func (plm *PluginManager) RegisterPlugin(ipl IPlugin,
 func (plm *PluginManager) ReadPacketFor(regipl IPlugin) packet.Packet {
 	receiver := plm.registerChan(regipl)
 	pk := <-receiver
-	fmt.Println(pk)
 	// It seems that channles can still be received after being closed.
-	close(receiver)
-	plm.unregisterChan(regipl, receiver)
 	return pk
 }
 
-func (plm *PluginManager) unregisterChan(regipl IPlugin, receiver chan packet.Packet) {
-	rcvers := plm.plugins[regipl].packetReceivers
-	for index, recver := range rcvers {
-		if recver == receiver {
-			plm.plugins[regipl].packetReceivers = append(rcvers[:index], rcvers[index+1:]...)
-			return
-		}
-	}
-}
-
 func (plm *PluginManager) registerChan(regipl IPlugin) chan packet.Packet {
-	// regipl: registrant
 	receiver := make(chan packet.Packet)
 
-	plm.plugins[regipl].regMu.RLock()
-	defer plm.plugins[regipl].regMu.RUnlock()
+	plm.plugins[regipl].regMu.Lock()
+	defer plm.plugins[regipl].regMu.Unlock()
 	plm.plugins[regipl].packetReceivers = append(plm.plugins[regipl].packetReceivers, receiver)
 	return receiver
 }

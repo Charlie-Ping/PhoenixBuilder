@@ -159,11 +159,6 @@ func (br *PluginBridgeImpl) SubscribeChat(cb func(string, string)) {
 	ChatEventListeners = append(ChatEventListeners, cb)
 }
 
-type ExpandPluginBridge interface {
-	GetGameData() minecraft.GameData
-	GetClientData() login.ClientData
-}
-
 type ExpandPluginBridgeImpl struct {
 	conn *minecraft.Conn
 }
@@ -174,4 +169,8 @@ func (br *ExpandPluginBridgeImpl) GetGameData() minecraft.GameData {
 
 func (br *ExpandPluginBridgeImpl) GetClientData() login.ClientData {
 	return br.conn.ClientData()
+}
+
+func (br *ExpandPluginBridgeImpl) IdentityData() login.IdentityData {
+	return br.conn.IdentityData()
 }

@@ -18,22 +18,22 @@ func StartPluginSystem(conn *minecraft.Conn) chan packet.Packet {
 	fp, _ := loadPluginDir()
 
 	os.MkdirAll(fp, 0755)
-	logpath := path.Join(fp, (time.Now().Format("2018-01-02") + ".log"))
+	logpath := path.Join(fp, (time.Now().Format("2006-01-02") + ".log"))
 	logFile, err := os.OpenFile(logpath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0766)
 
 	if err != nil {
-		fmt.Println(err)
+		// fmt.Println(err)
 		return nil
 	}
 	defer func() {
 		if err := recover(); err != nil {
-			logFile.WriteString(fmt.Sprintf("\n ERROR: %v", err))
+			logFile.WriteString(fmt.Sprintf("\n ERROR: %s", err))
 		}
 		logFile.Close()
 	}()
 
 	if runtime.GOOS == "windows" {
-		fmt.Println("[Plugin] Windows System doesn't support this feature, please try Linux Sys.")
+		fmt.Println("[Plugin] Windows System doesn't support this feature, please try to use Linux System.")
 		return nil
 	}
 	receiver := make(chan packet.Packet)
@@ -45,6 +45,7 @@ func StartPluginSystem(conn *minecraft.Conn) chan packet.Packet {
 		pluginPriority: []IPlugin{},
 		plugins:        map[IPlugin]*Plugin{},
 		Method:         &bridge,
+		Expand:         ExpandPluginBridgeImpl{conn: conn},
 	}
 
 	manager.Logger = *log.New(logFile, "", 19)
@@ -53,7 +54,6 @@ func StartPluginSystem(conn *minecraft.Conn) chan packet.Packet {
 		fmt.Println("Plugin system crashed")
 		manager.Logger.Println("Plugin system crashed")
 	}
-	print(6)
 	go func() {
 		for {
 			pk := <-receiver

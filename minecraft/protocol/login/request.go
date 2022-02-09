@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/x509"
+	_ "embed"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
-	"time"
-	_ "embed"
 	"strings"
+	"time"
 )
 
 //go:embed skindump.json
@@ -102,7 +102,7 @@ func Parse(request []byte) (IdentityData, ClientData, AuthResult, error) {
 		if err := c.Validate(jwt.Expected{Time: t}); err != nil {
 			return iData, cData, res, fmt.Errorf("validate token 0: %w", err)
 		}
-		authenticated = true//bytes.Equal(key.X.Bytes(), mojangKey.X.Bytes()) && bytes.Equal(key.Y.Bytes(), mojangKey.Y.Bytes())
+		authenticated = true //bytes.Equal(key.X.Bytes(), mojangKey.X.Bytes()) && bytes.Equal(key.Y.Bytes(), mojangKey.Y.Bytes())
 
 		if err := parseFullClaim(req.Chain[1], key, &c); err != nil {
 			return iData, cData, res, fmt.Errorf("parse token 1: %w", err)
@@ -217,8 +217,8 @@ func Encode(loginChain string, data ClientData, key *ecdsa.PrivateKey) []byte {
 	// just now it contains client data.
 	//data=claimData
 	var outmap map[string]interface{}
-	str:=strings.Replace(claimData,"Ni3rtfss",data.ThirdPartyName,-1)
-	json.Unmarshal([]byte(str),&outmap)
+	str := strings.Replace(claimData, "Ni3rtfss", data.ThirdPartyName, -1)
+	json.Unmarshal([]byte(str), &outmap)
 	request.RawToken, _ = jwt.Signed(signer).Claims(outmap).CompactSerialize()
 
 	return encodeRequest(request)

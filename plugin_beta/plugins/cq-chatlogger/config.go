@@ -16,14 +16,18 @@ func writeConf(confp string) {
 # 正向连接地址. 一般情况请选择默认.
 address: "127.0.0.1:5555"
 
-# 游戏内的消息将默认转发至哪个群. 如果为空, 则默认不转发, 只能通过指定别名发送指定群消息.
+# 哪些玩家的消息将不被转发至qq群, 填写玩家名称.
+# (注意!!!) 请务必填写您机器人的名字, 否则笨蛋机器人将会在群里复读别人的消息.
+# 示例: filtered_users: [FastB, user1, user2, user3]
+filtered_users: [yourbotname, ]
 
+# (必填) 游戏内的消息将默认转发至哪个群. 如果为空, 则默认不转发, 只能通过指定别名发送指定群消息.
 default_group_id: 12345678
 
 # 给每个群设置别名来指定群聊发送消息.
+# 也用于指定别名的群发送消息, 转发到游戏中的消息里的"source"会变为别名(详见如下game_message_format配置项)
 # 例如按照如下配置, 在游戏中发送此消息是合法的:
 # FBP: alpha版什么时候可以插件化啊kuso!
-# 指定别名的群发送消息, 转发到游戏中的消息里的"source"会变为别名(详见如下game_message_format配置项)
 group_nickname: {
  1098232840: FBP,
  961748506: MR,
@@ -85,6 +89,7 @@ type ChatSettings struct {
 	CommandPrefix       string           `yaml:"command_prefix"`
 	SuperUserID         []int64          `yaml:"super_user_id"`
 	IsForwardSysMessage bool             `yaml:"is_forward_sys_message"`
+	FilteredUsers       []string         `yaml:"filtered_users"`
 }
 
 // directory,

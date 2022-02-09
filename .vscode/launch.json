@@ -9,7 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "/home/charlie/Code/PhoenixBuilder/"
+            "program": "${fileDirname}"
         }
     ]
 }

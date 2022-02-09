@@ -134,11 +134,12 @@ func main() {
 }
 
 func runShellClient(token string, version string) {
-	code, serverPasswd, err := getRentalServerCode()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	// code, serverPasswd, err := getRentalServerCode()
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+	code, serverPasswd := "47675268", ""
 	runClient(token, version, code, serverPasswd)
 }
 
@@ -339,6 +340,7 @@ func runClient(token string, version string, code string, serverPasswd string) {
 			if strings.Contains(string(p.Content), "GetLoadingTime") {
 				//fmt.Printf("GetLoadingTime!!\n")
 				uid := conn.IdentityData().Uid
+				fmt.Println("your uid:", uid)
 				num := uid&255 ^ (uid&65280)>>8
 				curTime := time.Now().Unix()
 				num = curTime&3 ^ (num&7)<<2 ^ (curTime&252)<<3 ^ (num&248)<<8
