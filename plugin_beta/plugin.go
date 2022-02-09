@@ -71,7 +71,7 @@ func (plm *PluginManager) notify(pk packet.Packet) {
 			continue
 		}
 		plugin.handleNum += 1
-		handler := plugin.WaitGroupDecorator(iplugin.Handler)
+		handler := plugin.WaitGroupDecorator(iplugin.Handler, &plm.Logger)
 		// handler := iplugin.Handler
 		go handler(plm, pk)
 		if plugin.block {
@@ -219,8 +219,14 @@ func (plm *PluginManager) WritePacket(pk packet.Packet) {
 }
 
 // It decorates Handler of Plugin to record the number of functions running.
-func (pl *Plugin) WaitGroupDecorator(fn func(*PluginManager, packet.Packet)) func(*PluginManager, packet.Packet) {
+func (pl *Plugin) WaitGroupDecorator(fn func(*PluginManager, packet.Packet), lgr *log.Logger) func(*PluginManager, packet.Packet) {
 	return func(m *PluginManager, pk packet.Packet) {
+
+		defer func() {
+			if err := recover(); err != nil {
+				lgr.Printf("ERROR from %s: %s", pl.name, err)
+			}
+		}()
 		fn(m, pk)
 		pl.handleNum -= 1
 	}
