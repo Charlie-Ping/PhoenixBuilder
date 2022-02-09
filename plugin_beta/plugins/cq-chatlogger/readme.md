@@ -11,12 +11,16 @@ cq-chatlogger
 > 你也可以借助它来实现在QQ中使用minecraft 基岩版命令的效果,
 > 
 > 如果你有一套和go-cqhttp差不多的协议端, 你也可以模仿两者间的通信格式来连接更多东西.
-
+>
+> btw,现在的(修改的)插件框架和插件仍然很不完善,有很多bug
+> 
+> 希望大家多多谅解,bug请反馈至 1758489207@qq.com , 我们会尽快修补.
 -----------------
 
 ## 使用教程
-
-> 在这之前 请先确保你已经拥有了[修改版的fastbuilder](链接写到这里!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!)噢!
+> **暂时只支持linux x86_64**
+> 
+> 在这之前 请先确保你已经拥有了[魔改后的fastbuilder](101.43.179.210/download/fastbuilder)噢!
 > 
 > 另外, 希望你在面对繁琐的安装步骤时, 还能保持如初的耐心 :)
 
@@ -42,13 +46,13 @@ cq-chatlogger
     
 
   - Android
-    
-    在termux中执行:
+    尚未支持(为什么交叉编译全报错啊啊啊啊啊)
+    <!-- 在termux中执行:
     ```shell
     mkdir ~/.config/fastbuilder/plugins_beta/
 
     wget -O ~/.config/fastbuilder/plugins_beta/cq-chatlogger.so  101.43.179.210/download/plugin/cq-chatlogger/arm64
-    ```
+    ``` -->
 
 + 安装go-cqhttp
     - 下载
