@@ -11,30 +11,6 @@ import (
 	"phoenixbuilder/fastbuilder/plugin_structs"
 )
 
-// func StartPluginSystem(conn *minecraft.Conn) {
-// 	plugins:=loadConfigPath()
-// 	files, _ := ioutil.ReadDir(plugins)
-// 	pluginbridge := plugin_structs.PluginBridge(&PluginBridgeImpl {
-// 		sessionConnection: conn,
-// 	})
-// 	for _, file := range files {
-// 		path:=fmt.Sprintf("%s/%s",plugins,file.Name())
-// 		if filepath.Ext(path)!=".so" {
-// 			continue
-// 		}
-// 		go func() {
-// 			RunPlugin(conn,path,pluginbridge)
-// 		} ()
-// 	}
-// }
-
-
-type Plugin struct {
-	Priority int
-	Main func(bridge plugin_structs.PluginBridge) string // return name of the plugin
-
-}
-
 func StartPluginSystem(conn *minecraft.Conn) {
 	plugins:=loadConfigPath()
 	files, _ := ioutil.ReadDir(plugins)
@@ -42,7 +18,7 @@ func StartPluginSystem(conn *minecraft.Conn) {
 		sessionConnection: conn,
 	})
 	for _, file := range files {
-		path:=fmt.Sprintf("%s/%s",plugins,file.Name())	
+		path:=fmt.Sprintf("%s/%s",plugins,file.Name())
 		if filepath.Ext(path)!=".so" {
 			continue
 		}
@@ -68,10 +44,8 @@ func RunPlugin(conn *minecraft.Conn,path string,bridge plugin_structs.PluginBrid
 		fmt.Printf("Failed to find entry point for plugin %s.\n",path)
 		return
 	}
-	// interface{}.assert to PluginInit type, and call it.
-	// mainfunc断言为含pointer和接口参的函数 并调用,返回插件名
-	// conn的引用转为unsafe.Pointer
-	name:=mainfunc.(func(unsafe.Pointer,interface{})string)(unsafe.Pointer(conn),mainref)
+	
+	name:=mainfunc.(func(unsafe.Pointer,interface{})string)(unsafe.Pointer(&bridge),mainref)
 	fmt.Printf("Plugin %s(%s) loaded!\n",name,path)
 }
 

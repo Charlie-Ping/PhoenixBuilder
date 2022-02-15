@@ -3,7 +3,7 @@ package plugin_structs
 import "phoenixbuilder/minecraft/protocol/packet"
 
 type PluginBridge interface {
-	WritePacket(pk packet.Packet) error  // unsafe!
+	WritePacket(pk packet.Packet) error // unsafe!
 	// ReadPacket() (packet.Packet, error)
 	ConvertFunctionChainItemList(list map[string]FunctionChainItem) interface{}
 	RegisterBuilder(name string, function func(config MainConfig, blc chan *Module) error) bool
@@ -20,6 +20,8 @@ type PluginBridge interface {
 	// "CB" stands for callback.
 	SendCommandCB(command string, cb func([]CommandOutputMessage, string))
 	SendWSCommandCB(command string, cb func([]CommandOutputMessage, string))
+	// 1st arg: username, 2nd arg: content
+	SubscribeChat(cb func(string, string))
 }
 
 type CommandOutputMessage struct {

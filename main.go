@@ -9,10 +9,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	cqchat "phoenixbuilder/cq-chatlogger"
 	"phoenixbuilder/fastbuilder/command"
 	"phoenixbuilder/fastbuilder/configuration"
 	fbauth "phoenixbuilder/fastbuilder/cv4/auth"
+	"phoenixbuilder/fastbuilder/enchant"
 	"phoenixbuilder/fastbuilder/function"
 	I18n "phoenixbuilder/fastbuilder/i18n"
 	"phoenixbuilder/fastbuilder/menu"
@@ -20,9 +20,12 @@ import (
 	"phoenixbuilder/fastbuilder/signalhandler"
 	fbtask "phoenixbuilder/fastbuilder/task"
 	"phoenixbuilder/fastbuilder/types"
+	"phoenixbuilder/fastbuilder/utils"
+	"phoenixbuilder/fastbuilder/world_provider"
 	"phoenixbuilder/minecraft"
+	"phoenixbuilder/minecraft/protocol"
 	"phoenixbuilder/minecraft/protocol/packet"
-	"phoenixbuilder/minecraft/utils"
+	plugin_beta "phoenixbuilder/plugin_beta"
 	"runtime"
 	"runtime/debug"
 	"strings"
@@ -42,7 +45,7 @@ type FBPlainToken struct {
 
 //Version num should seperate from fellow strings
 //for implenting print version feature later
-const FBVersion = "1.0.0~2"
+const FBVersion = "1.2.991"
 const FBCodeName = "Phoenix"
 
 func main() {
@@ -94,12 +97,12 @@ func main() {
 	}
 	token := loadTokenPath()
 	version, err := utils.GetHash(ex)
-	version = "58fba95de86d5420675fe135850b9cf9ef16d39d821209191a95150ecff0fefc"
 	if err != nil {
 		panic(err)
 	}
 	if _, err := os.Stat(token); os.IsNotExist(err) {
 		fbusername, err := getInputUserName()
+		plugin_beta.SetUserName(fbusername)
 		if err != nil {
 			panic(err)
 		}
@@ -137,19 +140,11 @@ func runShellClient(token string, version string) {
 		fmt.Println(err)
 		return
 	}
+	// code, serverPasswd := "47675268", ""
 	runClient(token, version, code, serverPasswd)
 }
 
 func runClient(token string, version string, code string, serverPasswd string) {
-	defer func ()  {
-		if err := recover(); err != nil {
-			debug.PrintStack()
-			pterm.Error.Println(err)
-			pterm.Info.Println(I18n.T(I18n.RestartAfter3Second))
-			runClient(token, version, code, serverPasswd)
-			
-		}
-	} ()
 	worldchatchannel := make(chan []string)
 	client := fbauth.CreateClient(worldchatchannel)
 	if token[0] == '{' {
@@ -188,12 +183,10 @@ func runClient(token string, version string, code string, serverPasswd string) {
 		Token:      token,
 		Client:     client,
 	}
-
 	conn, err := dialer.Dial("raknet", "")
 
 	if err != nil {
 		if IsUnderLib {
-			fmt.Println("IsUnderLib!")
 			bridgeLoginFailed(fmt.Sprintf("%v", err))
 			return
 			panic(err)
@@ -243,6 +236,9 @@ func runClient(token string, version string, code string, serverPasswd string) {
 			[]byte{0xc0},
 		}, []byte{}),
 	})
+	conn.WritePacket(&packet.ClientCacheStatus{
+		Enabled: false,
+	})
 	go func() {
 		for {
 			csmsg := <-worldchatchannel
@@ -250,10 +246,13 @@ func runClient(token string, version string, code string, serverPasswd string) {
 		}
 	}()
 
-	plugin.StartPluginSystem(conn)
+	// plugin.StartPluginSystem(conn)
+	plugin_beta.ServerID = code
+	receiver := plugin_beta.StartPluginSystem(conn)
 
 	function.InitInternalFunctions()
 	fbtask.InitTaskStatusDisplay(conn)
+	world_provider.Init()
 
 	signalhandler.Init(conn)
 
@@ -291,6 +290,12 @@ func runClient(token string, version string, code string, serverPasswd string) {
 				fmt.Printf("OK\n")
 				continue
 			}
+			if cmd == "ench" {
+				go func() {
+					enchant.StartSession(conn)
+				}()
+				continue
+			}
 			if cmd[0] == '>' && len(cmd) > 1 {
 				umsg := cmd[1:]
 				if !client.CanSendMessage() {
@@ -308,8 +313,7 @@ func runClient(token string, version string, code string, serverPasswd string) {
 			if rule.Name == "sendcommandfeedback" {
 				sendcommandfeedbackStatus := rule.Value.(bool)
 				if !sendcommandfeedbackStatus {
-					// notify user
-					tellraw(conn, fmt.Sprintf("%s", I18n.T(I18n.Notify_TurnOnCmdFeedBack)))
+					command.SendSizukanaCommand("gamerule sendcommandfeedback true", conn)
 				}
 				if !rule.CanBeModifiedByPlayer {
 					sendChat(I18n.T(I18n.Notify_NeedOp), conn)
@@ -318,38 +322,18 @@ func runClient(token string, version string, code string, serverPasswd string) {
 			}
 		}
 	}()
-    
-	cqchat.CQMessages = make(chan cqchat.IMessage)
-	cqchat.MCMessages = make(chan *packet.Text)
-	cqchat.GlobalConn(conn, code)
 
-	
-	if !cqchat.Has_Connected{
-		cqchat.Has_Connected = true
-		go cqchat.Run()
-	}
-	go func() {
-		
-		fmt.Println("start receive msgs")
-		for {
-			msg := <-cqchat.CQMessages
-			fmt.Println("RECEIVE: " + msg.FormatCQMessage())
-			uuid1, _ := uuid.NewUUID()
-			if msg.IsCommand() && !cqchat.IsFilteredUser(msg.GetUser()) {
-				err = command.SendCommand(msg.GetMessage(), uuid1, conn)
-				continue
-			}
-			_ = command.SendCommand(cqchat.TellrawCommand(msg.FormatCQMessage()), uuid1, conn)
-		}
-	}()
-	
 	// A loop that reads packets from the connection until it is closed.
 	for {
 		// Read a packet from the connection: ReadPacket returns an error if the connection is closed or if
 		// a read timeout is set. You will generally want to return or break if this happens.
 		pk, err := conn.ReadPacket()
+
 		if err != nil {
 			panic(err)
+		}
+		if receiver != nil {
+			receiver <- pk
 		}
 
 		switch p := pk.(type) {
@@ -358,6 +342,7 @@ func runClient(token string, version string, code string, serverPasswd string) {
 			if strings.Contains(string(p.Content), "GetLoadingTime") {
 				//fmt.Printf("GetLoadingTime!!\n")
 				uid := conn.IdentityData().Uid
+				fmt.Println("your uid:", uid)
 				num := uid&255 ^ (uid&65280)>>8
 				curTime := time.Now().Unix()
 				num = curTime&3 ^ (num&7)<<2 ^ (curTime&252)<<3 ^ (num&248)<<8
@@ -427,8 +412,10 @@ func runClient(token string, version string, code string, serverPasswd string) {
 		/*case *packet.InventorySlot:
 		fmt.Printf("Slot %d:%+v",p.Slot,p.NewItem.Stack)*/
 		case *packet.Text:
-			cqchat.MCMessages <- p
 			if p.TextType == packet.TextTypeChat {
+				for _, item := range plugin.ChatEventListeners {
+					item(p.SourceName, p.Message)
+				}
 				if user == p.SourceName {
 					if p.Message[0] == '>' && len(p.Message) > 1 {
 						umsg := p.Message[1:]
@@ -486,8 +473,64 @@ func runClient(token string, version string, code string, serverPasswd string) {
 				pu := pr.(chan *packet.CommandOutput)
 				pu <- p
 			}
+		case *packet.ActorEvent:
+			if p.EventType == packet.ActorEventDeath && p.EntityRuntimeID == conn.GameData().EntityRuntimeID {
+				conn.WritePacket(&packet.PlayerAction{
+					EntityRuntimeID: conn.GameData().EntityRuntimeID,
+					ActionType:      protocol.PlayerActionRespawn,
+				})
+			}
+		case *packet.LevelChunk:
+			if world_provider.ChunkInput != nil {
+				world_provider.ChunkInput <- p
+			} else {
+				world_provider.DoCache(p)
+			}
+		case *packet.UpdateBlock:
+			channel, h := command.BlockUpdateSubscribeMap.LoadAndDelete(p.Position)
+			if h {
+				ch := channel.(chan bool)
+				ch <- true
+			}
+		case *packet.AddActor:
+			if p.EntityType == "minecraft:villager_v2" {
+				if enchant.AddVillagerChannel != nil {
+					//fmt.Printf("Input 1")
+					enchant.AddVillagerChannel <- p
+					//fmt.Printf("Input 1 fin")
+				}
+			}
+		case *packet.TakeItemActor:
+			if enchant.PacketToResend != nil {
+				if p.TakerEntityRuntimeID == conn.GameData().EntityRuntimeID {
+					command.SendWSCommand("give @s paper", uuid.New(), conn)
+				}
+			}
+		case *packet.InventoryContent:
+			if p.WindowID == 0 {
+				if len(p.Content) == 0 {
+					break
+				}
+				if enchant.InventoryContentChannel != nil {
+					//fmt.Printf("Input 2")
+					enchant.InventoryContentChannel <- p
+					//fmt.Printf("Input 2 fin")
+				}
+			}
+		case *packet.ItemStackResponse:
+			if enchant.ItemStackResponseChannel != nil {
+				//fmt.Printf("Input 3")
+				enchant.ItemStackResponseChannel <- p
+				//fmt.Printf("Input 3 fin")
+			}
+		case *packet.UpdateTrade:
+			if enchant.PacketToResend != nil {
+				//fmt.Printf("Input 4")
+				//enchant.TradeWindowIDChannel<-p.WindowID
+				//fmt.Printf("Input 4 fin")
+				enchant.TradeWindowID = p.WindowID
+			}
 		}
-
 	}
 }
 
@@ -581,7 +624,6 @@ func getInputUserName() (string, error) {
 func getRentalServerCode() (string, string, error) {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Printf(I18n.T(I18n.Enter_Rental_Server_Code))
-
 	code, err := reader.ReadString('\n')
 	if err != nil {
 		return "", "", err

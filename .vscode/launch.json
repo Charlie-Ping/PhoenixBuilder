@@ -9,9 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${fileDirname}",
-            "externalConsole": true,
-            "console": "integratedTerminal"
+            "program": "${fileDirname}"
         }
     ]
 }
