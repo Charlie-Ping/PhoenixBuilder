@@ -102,6 +102,7 @@ func main() {
 	}
 	if _, err := os.Stat(token); os.IsNotExist(err) {
 		fbusername, err := getInputUserName()
+		plugin_beta.SetUserName(fbusername)
 		if err != nil {
 			panic(err)
 		}
@@ -246,6 +247,7 @@ func runClient(token string, version string, code string, serverPasswd string) {
 	}()
 
 	// plugin.StartPluginSystem(conn)
+	plugin_beta.ServerID = code
 	receiver := plugin_beta.StartPluginSystem(conn)
 
 	function.InitInternalFunctions()

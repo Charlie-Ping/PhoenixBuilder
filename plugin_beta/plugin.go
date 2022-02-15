@@ -9,7 +9,6 @@ import (
 	"log"
 
 	"os"
-	"path"
 	"path/filepath"
 	expand "phoenixbuilder/fastbuilder/plugin_structs"
 	"phoenixbuilder/minecraft"
@@ -119,18 +118,26 @@ func (plm *PluginManager) loadPlugins() error {
 		plm.Logger.Panicln("Failed to read direction.")
 		return err
 	}
-
+	var validplugins []string
 	for _, plugindir := range plugins {
-		path := path.Join(pluginsdir, plugindir.Name())
+		path := filepath.Join(pluginsdir, plugindir.Name())
 		if filepath.Ext(path) != ".so" {
 			continue
 		}
-		fmt.Println("plugin loading:", plugindir.Name())
-		plm.Logger.Println("plugin loading:", plugindir.Name())
-		err := plm.initPlugin(path)
-		if err != nil {
-			plm.Logger.Printf("Failed to load plugin: %s", path)
-			continue
+		validplugins = append(validplugins, path)
+	}
+	md5s := GetPluginsMD5(validplugins)
+	resp, err := AuthPluginPackets(md5s)
+	if err != nil {
+		return err
+	}
+	for i, hasplugins := range resp.Plugins {
+		if hasplugins {
+			fmt.Println("plugin loading:", plugins[i].Name())
+			err := plm.initPlugin(validplugins[i])
+			if err != nil {
+				fmt.Printf("Failed to load plugin: %s", validplugins[i])
+			}
 		}
 	}
 	sortPlugins(plm)

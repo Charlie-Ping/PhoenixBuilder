@@ -68,6 +68,6 @@ func loadPluginDir() (string, error) {
 	if err != nil {
 		homedir = "."
 	}
-	plugindir := filepath.Join(homedir, ".config/fastbuilder/plugins_beta")
+	plugindir := filepath.Join(homedir, ".config/fastbuilder/plugins_beta/")
 	return plugindir, err
 }
