@@ -1,9 +1,9 @@
 package plugin_structs
 
-import "phoenixbuilder/minecraft/protocol/packet"
+// import "phoenixbuilder/minecraft/protocol/packet"
 
 type PluginBridge interface {
-	WritePacket(pk packet.Packet) error // unsafe!
+	// WritePacket(pk packet.Packet) error // unsafe!
 	// ReadPacket() (packet.Packet, error)
 	ConvertFunctionChainItemList(list map[string]FunctionChainItem) interface{}
 	RegisterBuilder(name string, function func(config MainConfig, blc chan *Module) error) bool
