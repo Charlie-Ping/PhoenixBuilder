@@ -126,20 +126,18 @@ func (plm *PluginManager) loadPlugins() error {
 		}
 		validplugins = append(validplugins, path)
 	}
-	md5s := GetPluginsMD5(validplugins)
-	resp, err := AuthPluginPackets(md5s)
 	if err != nil {
 		return err
 	}
-	for i, hasplugins := range resp.Plugins {
-		if hasplugins {
-			fmt.Println("plugin loading:", plugins[i].Name())
-			err := plm.initPlugin(validplugins[i])
-			if err != nil {
-				fmt.Printf("Failed to load plugin: %s", validplugins[i])
-			}
-		}
-	}
+	// for i, hasplugins := range resp.Plugins {
+	// 	if hasplugins {
+	// 		fmt.Println("plugin loading:", plugins[i].Name())
+	// 		err := plm.initPlugin(validplugins[i])
+	// 		if err != nil {
+	// 			fmt.Printf("Failed to load plugin: %s", validplugins[i])
+	// 		}
+	// 	}
+	// }
 	sortPlugins(plm)
 	return err
 }

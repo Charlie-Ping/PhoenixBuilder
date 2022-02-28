@@ -14,7 +14,10 @@ import (
 )
 
 func StartPluginSystem(conn *minecraft.Conn) chan packet.Packet {
-
+	res := AuthAccount()
+    if (!res["res"]) {
+		fmt.Printf("Error: %s", res["info"])
+	}
 	fp, _ := loadPluginDir()
 
 	os.MkdirAll(fp, 0755)
