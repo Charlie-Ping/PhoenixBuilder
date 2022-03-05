@@ -19,6 +19,7 @@ func StartPluginSystem(conn *minecraft.Conn) chan packet.Packet {
 		fmt.Printf("Error: %s", res.Comment)
 	} else {
 		fmt.Println("Plugin System Authorized.")
+	}
 	fp, _ := loadPluginDir()
 
 	os.MkdirAll(fp, 0755)
