@@ -3,9 +3,11 @@ package plugin_beta
 import (
 	"bufio"
 	"bytes"
+
 	// "crypto/md5"
 	"encoding/json"
 	"fmt"
+
 	// "hash/maphash"
 	"io/ioutil"
 	"net/http"
@@ -14,24 +16,28 @@ import (
 	I18n "phoenixbuilder/fastbuilder/i18n"
 )
 
-
 var ServerID string
 
-var auth_addr = "101.43.179.210:80/auth/account"
+var auth_addr = "http://101.43.179.210/auth/account"
+
+type AuthAccountResp struct {
+	Status  bool
+	Comment string
+}
 
 // type authen struct {
 // 	ServerId string       `json:"server"`
 // 	Account  string       `json:"account"`
 // 	Plugins  []([16]byte) `json:"plugins"`
 // }
-// 
+//
 // type authResponse struct {
 // 	Plugins   []([16]byte) `json:"plugins"`
 // 	HasBundle bool         `json:"has_bundle"`
 // }
-// 
+//
 // func plugin_md5(plugin_dir string) [16]byte {
-// 	
+//
 // 	f, err := os.Open(plugin_dir)
 // 	if err != nil {
 // 		fmt.Printf("auth plugin:%s failed: %s", plugin_dir, err)
@@ -44,7 +50,7 @@ var auth_addr = "101.43.179.210:80/auth/account"
 // 	authen := md5.Sum(data)
 // 	return authen
 // }
-// 
+//
 // func GetPluginsMD5(files []string) []([16]byte) {
 // 	md5s := []([16]byte){}
 // 	for _, plugin := range files {
@@ -53,7 +59,7 @@ var auth_addr = "101.43.179.210:80/auth/account"
 // 	fmt.Println("md5: ", md5s)
 // 	return md5s
 // }
-// 
+//
 // func AuthPluginPackets(md5s []([16]byte)) (authResponse, error) {
 // 	info := authen{
 // 		Account:  GetUserName(),
@@ -111,17 +117,20 @@ func GetUserName() string {
 	return un
 }
 
-func AuthAccount() map[string]string {
-	info := map[string]string {
-		"account": "",
+func AuthAccount() AuthAccountResp {
+	info := map[string]string{
+		"account": ServerID,
 	}
 	data, _ := json.Marshal(info)
 	resp, err := http.Post(auth_addr, "application/x-www-form-urlencoded", bytes.NewBuffer(data))
 	if err != nil {
 		fmt.Printf("Validation failed for plugin Bundle: %s", err)
 	}
-	body, _ := ioutil.ReadAll(resp.Body)
-	auth := map[string]bool{}
-	err = json.Unmarshal(body, &auth)
-	return auth["res"]
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("Validation failed for plugin Bundle: %s", err)
+	}
+	auth := AuthAccountResp{}
+	_ = json.Unmarshal(body, &auth)
+	return auth
 }

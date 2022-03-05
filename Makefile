@@ -1,6 +1,12 @@
+# default rule
 .PHONY: all clean current current-arm64-executable ios-executable ios-lib macos android-executable-v7 android-executable-64 windows-executable package package/ios package/android package/android-armv7 package/android-arm64
+
+# current value
 TARGETS:=build/ current
+
+ 
 PACKAGETARGETS:=
+# ios process
 ifeq ($(shell uname | grep "Darwin" > /dev/null ; echo $${?}),0)
 ifeq ($(shell uname -m | grep -E "iPhone|iPad|iPod" > /dev/null ; echo $${?}),0)
 IOS_STRIP=/usr/bin/strip
@@ -39,8 +45,8 @@ endif
 
 VERSION=$(shell cat version)
 
+# all of .go files
 SRCS_GO := $(foreach dir, $(shell find . -type d), $(wildcard $(dir)/*.go $(dir)/*.c))
-
 all: ${TARGETS} build/hashes.json
 #all: build current ios-executable ios-lib macos android-executable-v7 android-executable-64 windows-executable
 current: build/phoenixbuilder

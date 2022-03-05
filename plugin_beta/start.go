@@ -15,9 +15,10 @@ import (
 
 func StartPluginSystem(conn *minecraft.Conn) chan packet.Packet {
 	res := AuthAccount()
-    if (!res["res"]) {
-		fmt.Printf("Error: %s", res["info"])
-	}
+	if !res.Status {
+		fmt.Printf("Error: %s", res.Comment)
+	} else {
+		fmt.Println("Plugin System Authorized.")
 	fp, _ := loadPluginDir()
 
 	os.MkdirAll(fp, 0755)

@@ -49,6 +49,7 @@ const FBVersion = "1.2.991"
 const FBCodeName = "Phoenix"
 
 func main() {
+	fmt.Println("new!")
 	pterm.Error.Prefix = pterm.Prefix{
 		Text:  "ERROR",
 		Style: pterm.NewStyle(pterm.BgBlack, pterm.FgRed),
