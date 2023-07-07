@@ -1,14 +1,15 @@
-package BuiltlnFn
+package BuiltinFn
 
 import (
 	"fmt"
-	lua "github.com/yuin/gopher-lua"
 	"path/filepath"
 	"phoenixbuilder/omega/mainframe/lang_support/lua_frame/utils"
+
+	lua "github.com/yuin/gopher-lua"
 )
 
 type BuiltFileControler struct {
-	*BuiltlnFn
+	*BuiltinFn
 }
 
 func (b *BuiltFileControler) BuiltFunc(L *lua.LState) int {

@@ -1,9 +1,9 @@
-package BuiltlnFn
+package BuiltinFn
 
 import lua "github.com/yuin/gopher-lua"
 
 type BuiltDataControler struct {
-	*BuiltlnFn
+	*BuiltinFn
 }
 
 // 获取config 获取data信息 写入data信息 写入config信息

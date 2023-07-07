@@ -1,11 +1,12 @@
-package BuiltlnFn
+package BuiltinFn
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/yuin/gopher-lua"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/websocket"
+	lua "github.com/yuin/gopher-lua"
 )
 
 var upgrader = websocket.Upgrader{

@@ -10,7 +10,7 @@ import (
 	"phoenixbuilder/omega/collaborate"
 	"phoenixbuilder/omega/defines"
 	lf "phoenixbuilder/omega/mainframe/lang_support/lua_frame"
-	"phoenixbuilder/omega/mainframe/lang_support/lua_frame/BuiltlnFn"
+	"phoenixbuilder/omega/mainframe/lang_support/lua_frame/BuiltinFn"
 	omgApi "phoenixbuilder/omega/mainframe/lang_support/lua_frame/omgcomponentapi"
 	utils2 "phoenixbuilder/omega/mainframe/lang_support/lua_frame/utils"
 	"phoenixbuilder/omega/utils"
@@ -581,7 +581,7 @@ func (o *Partol) Activate() {
 type LuaComponenter struct {
 	*BaseCoreComponent
 	Monitor   *lf.Monitor
-	LuaFrame  *BuiltlnFn.BuiltlnFn
+	LuaFrame  *BuiltinFn.BuiltinFn
 	mainFrame defines.MainFrame
 	//用于分发各种包
 	//PackageChanSlice []*Package.PackageChan
@@ -619,7 +619,7 @@ func (o *LuaComponenter) Activate() {
 	//现在开始监听后台 并且分散给所有插件
 	func() {
 		//支持运行各种监听包
-		o.Monitor.BuiltlnFner.PackageHandler()
+		o.Monitor.BuiltinFner.PackageHandler()
 		o.Monitor.OmgFrame.Omega.SetBackendCmdInterceptor(func(cmds []string) (stop bool) {
 			is := false
 			if cmds[0] == "lua" {

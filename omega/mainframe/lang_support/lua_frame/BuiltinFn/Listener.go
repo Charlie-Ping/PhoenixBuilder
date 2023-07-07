@@ -1,11 +1,12 @@
-package BuiltlnFn
+package BuiltinFn
 
 import (
 	"fmt"
-	lua "github.com/yuin/gopher-lua"
 	"phoenixbuilder/minecraft/protocol"
 	"phoenixbuilder/omega/defines"
 	"phoenixbuilder/omega/mainframe/lang_support/lua_frame/definition"
+
+	lua "github.com/yuin/gopher-lua"
 )
 
 // 模拟消息
@@ -14,13 +15,13 @@ type Message struct {
 	Content string
 }
 type BuiltListener struct {
-	*BuiltlnFn
+	*BuiltinFn
 }
 
 /*
 // Listener实现
 
-	func (b *BuiltListener) BuiltlnListner(L *lua.LState) int {
+	func (b *BuiltListener) BuiltinListner(L *lua.LState) int {
 		// 注册Listener类型
 
 		mt := L.NewTypeMetatable("listener")

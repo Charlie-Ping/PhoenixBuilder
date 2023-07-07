@@ -1,12 +1,13 @@
-package BuiltlnFn
+package BuiltinFn
 
 import (
 	"fmt"
+
 	lua "github.com/yuin/gopher-lua"
 )
 
 type LoadSide struct {
-	*BuiltlnFn
+	*BuiltinFn
 }
 
 func (b *LoadSide) BuiltFunc(L *lua.LState) int {

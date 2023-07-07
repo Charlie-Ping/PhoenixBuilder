@@ -1,4 +1,4 @@
-package BuiltlnFn
+package BuiltinFn
 
 import (
 	"phoenixbuilder/minecraft/protocol"
@@ -11,7 +11,7 @@ import (
 )
 
 // 内置函数加载器
-type BuiltlnFn struct {
+type BuiltinFn struct {
 	//omg组件
 	OmegaFrame       *omgApi.OmgApi
 	Listener         sync.Map
@@ -20,12 +20,12 @@ type BuiltlnFn struct {
 }
 
 // 将结构体塞入通道内
-func (m *BuiltlnFn) RegisterPackage(packageChan *definition.PackageChan) {
+func (m *BuiltinFn) RegisterPackage(packageChan *definition.PackageChan) {
 	m.PackageChanSlice = append(m.PackageChanSlice, packageChan)
 }
 
 // 删除指定元素
-func (m *BuiltlnFn) RemovePackageChan(num int) {
+func (m *BuiltinFn) RemovePackageChan(num int) {
 	if num < 0 || num >= len(m.PackageChanSlice) {
 		return
 	}
@@ -33,7 +33,7 @@ func (m *BuiltlnFn) RemovePackageChan(num int) {
 }
 
 // 注入消息
-func (m *BuiltlnFn) PackageInjectIntoChan(data interface{}, PackageType string) {
+func (m *BuiltinFn) PackageInjectIntoChan(data interface{}, PackageType string) {
 	if m.PackageChanSlice == nil {
 		return
 	}
@@ -49,7 +49,7 @@ func (m *BuiltlnFn) PackageInjectIntoChan(data interface{}, PackageType string) 
 }
 
 // 分发监听包
-func (m *BuiltlnFn) PackageHandler() {
+func (m *BuiltinFn) PackageHandler() {
 	//注册然后分发
 	//获取终端消息
 	m.OmegaFrame.MainFrame.SetBackendCmdInterceptor(func(cmds []string) (stop bool) {
@@ -71,12 +71,12 @@ func (m *BuiltlnFn) PackageHandler() {
 }
 
 // 载入
-func (b *BuiltlnFn) LoadFn(L *lua.LState) error {
+func (b *BuiltinFn) LoadFn(L *lua.LState) error {
 	// 创建一个Lua table
 	//注册skynet
 	skynet := L.NewTable()
 	//注入
-	SkynetBuiltFnDic := b.GetSkynetBuiltlnFunction()
+	SkynetBuiltFnDic := b.GetSkynetBuiltinFunction()
 	for k, v := range SkynetBuiltFnDic {
 		L.SetField(skynet, k, L.NewFunction(v.BuiltFunc))
 	}

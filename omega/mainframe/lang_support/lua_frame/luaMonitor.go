@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"phoenixbuilder/omega/mainframe/lang_support/lua_frame/BuiltlnFn"
+	"phoenixbuilder/omega/mainframe/lang_support/lua_frame/BuiltinFn"
 	"phoenixbuilder/omega/mainframe/lang_support/lua_frame/definition"
 	"phoenixbuilder/omega/mainframe/lang_support/lua_frame/luaConfig"
 	omgApi "phoenixbuilder/omega/mainframe/lang_support/lua_frame/omgcomponentapi"
@@ -27,7 +27,7 @@ type Monitor struct {
 	LuaComponentData map[string]utils.Result
 	OmgFrame         *omgApi.OmgApi
 	FileControl      *utils.FileControl
-	BuiltlnFner      *BuiltlnFn.BuiltlnFn
+	BuiltinFner      *BuiltinFn.BuiltinFn
 }
 
 // 插件
@@ -46,7 +46,7 @@ func NewMonitor(lc *omgApi.OmgApi) *Monitor {
 		ComponentPoll: make(map[string]*LuaComponent),
 		//获取omg框架
 		OmgFrame: lc,
-		BuiltlnFner: &BuiltlnFn.BuiltlnFn{
+		BuiltinFner: &BuiltinFn.BuiltinFn{
 			OmegaFrame:       lc,
 			Listener:         sync.Map{},
 			PackageChanSlice: []*definition.PackageChan{},
@@ -295,7 +295,7 @@ func (m *Monitor) RunComponent(name string) error {
 			utils.PrintInfo(utils.NewPrintMsg("警告", ConfigErr))
 		}
 		L.SetGlobal("ComponentConfig", lua.LString(configString))
-		if err := m.BuiltlnFner.LoadFn(L); err != nil {
+		if err := m.BuiltinFner.LoadFn(L); err != nil {
 			fmt.Println(err)
 			return
 		}

@@ -1,14 +1,15 @@
-package BuiltlnFn
+package BuiltinFn
 
 import (
 	"fmt"
-	lua "github.com/yuin/gopher-lua"
 	"phoenixbuilder/omega/mainframe/lang_support/lua_frame/definition"
+
+	lua "github.com/yuin/gopher-lua"
 )
 
 // 终端输入输出接口
 type BuiltBackEnder struct {
-	*BuiltlnFn
+	*BuiltinFn
 	BackEndMsgChan chan string
 }
 
