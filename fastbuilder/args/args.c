@@ -9,6 +9,12 @@
 #endif
 #include <sys/types.h>
 #include <stdint.h>
+#ifdef WIN32
+#ifndef __MINGW32__
+#error "This file uses gcc-specific features, please consider switching to mingw gcc."
+#endif
+#include <windows.h>
+#endif
 
 #ifndef FB_VERSION
 #define FB_VERSION "(CUSTOMIZED)"
@@ -46,6 +52,7 @@ char ingame_response=0;
 extern void custom_script_engine_const(const char *key, const char *val);
 extern void do_suppress_se_const(const char *key);
 
+// TODO: Localizations via Gettext/Glibc intl
 void print_help(const char *self_name) {
 	printf("%s [options]\n",self_name);
 	printf("\t--debug: Run in debug mode.\n");
@@ -343,7 +350,7 @@ int _parse_args(int argc, char **argv) {
 
 struct go_string args_var_fbversion_struct={
 	FB_VERSION " (" FB_COMMIT ")",
-	sizeof(FB_VERSION " (" FB_COMMIT ")")
+	sizeof(FB_VERSION " (" FB_COMMIT ")")-1
 };
 
 /*
@@ -362,12 +369,12 @@ struct go_string *args_func_authServer() {
 
 struct go_string args_var_fbplainversion_struct={
 	FB_VERSION,
-	sizeof(FB_VERSION)
+	sizeof(FB_VERSION)-1
 };
 
 struct go_string args_fb_commit_struct={
 	FB_COMMIT,
-	sizeof(FB_COMMIT)
+	sizeof(FB_COMMIT)-1
 };
 
 int args_has_specified_server() {
@@ -378,6 +385,7 @@ int args_specified_token() {
 	return token_content.length!=0;
 }
 
+#ifndef WIN32
 __attribute__((constructor)) static void parse_args(int argc, char **argv) {
 	int ec;
 	if((ec=_parse_args(argc,argv))!=-1) {
@@ -385,3 +393,29 @@ __attribute__((constructor)) static void parse_args(int argc, char **argv) {
 	}
 	return;
 }
+#else
+__attribute__((constructor)) static void parse_args_win32() {
+	int argc;
+	char **argv;
+	wchar_t **ugly_argv=CommandLineToArgvW(GetCommandLineW(), &argc);
+	argv=malloc(sizeof(char*)*argc);
+	for(int i=0;i<argc;i++) {
+		int len=WideCharToMultiByte(CP_UTF8, 0, ugly_argv[i], -1, NULL, 0, NULL, 0);
+		argv[i]=malloc(len);
+		WideCharToMultiByte(CP_UTF8, 0, ugly_argv[i], -1, argv[i], len, NULL, 0);
+	}
+	int ec;
+	if((ec=_parse_args(argc,argv))!=-1) {
+		exit(ec);
+	}
+	for(int i=0;i<argc;i++) {
+		free(argv[i]);
+	}
+	free(argv);
+	LocalFree(ugly_argv);
+	HMODULE winmm_lib=LoadLibraryA("winmm.dll");
+	void (*timeBeginPeriod)(int)=(void *)GetProcAddress(winmm_lib, "timeBeginPeriod");
+	timeBeginPeriod(1);
+	FreeLibrary(winmm_lib);
+}
+#endif

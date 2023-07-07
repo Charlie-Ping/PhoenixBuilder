@@ -1,6 +1,12 @@
 package BuiltlnFn
 
-import lua "github.com/yuin/gopher-lua"
+import (
+	"fmt"
+	lua "github.com/yuin/gopher-lua"
+	"phoenixbuilder/minecraft/protocol"
+	"phoenixbuilder/omega/defines"
+	"phoenixbuilder/omega/mainframe/lang_support/lua_frame/definition"
+)
 
 // 模拟消息
 type Message struct {
@@ -36,11 +42,6 @@ type BuiltListener struct {
 */
 func (b *BuiltListener) BuiltFunc(L *lua.LState) int {
 	// 注册Listener类型
-
-	mt := L.NewTypeMetatable("listener")
-	L.SetField(mt, "__index", L.SetFuncs(L.NewTable(), map[string]lua.LGFunction{
-		"NextMsg": NextMsg,
-	}))
 	listener := L.NewTable()
 	//listener的方法 listen("可变参数") 获取参数  listenPackage(Id)
 
@@ -49,38 +50,91 @@ func (b *BuiltListener) BuiltFunc(L *lua.LState) int {
 
 		return 1
 	}))
+	L.SetField(listener, "GetLogInfoer", L.NewFunction(b.GetLoger))
 	//返回listener对象
 	L.Push(listener)
 	return 1
 }
 
-// 监听器
-// Listener 结构体
-type Listener struct {
-	MsgChannel chan Message // 每个监听器都有一个独立的消息通道
+// 获取玩家登录登出
+func (b *BuiltListener) GetLoger(l *lua.LState) int {
+	LogInfoer := l.NewTable()
+	l.SetField(LogInfoer, "GetLoginInfo", l.NewFunction(b.GetLoginInfo))
+	l.SetField(LogInfoer, "GetLogoutInfo", l.NewFunction(b.GetLogoutInfo))
+	l.Push(LogInfoer)
+	return 1
+}
+
+// 登出
+func (b *BuiltListener) GetLogoutInfo(l *lua.LState) int {
+	msgChan := make(chan interface{}, 1)
+	b.RegisterPackage(&definition.PackageChan{
+		PackageType:    definition.LOGOUT_TYPE,
+		PackageMsgChan: msgChan,
+	})
+	logoutMsg := <-msgChan
+	logoutTable := l.NewTable()
+	switch v := logoutMsg.(type) {
+	case protocol.PlayerListEntry:
+		l.SetField(logoutTable, "Name", lua.LString(v.Username))
+	default:
+		fmt.Println("登陆包解析失败")
+	}
+	l.Push(logoutTable)
+	return 1
+}
+
+// 登进
+func (b *BuiltListener) GetLoginInfo(l *lua.LState) int {
+	msgChan := make(chan interface{}, 1)
+	b.RegisterPackage(&definition.PackageChan{
+		PackageType:    definition.LOGIN_TYPE,
+		PackageMsgChan: msgChan,
+	})
+	logoutMsg := <-msgChan
+	logoutTable := l.NewTable()
+	switch v := logoutMsg.(type) {
+	case protocol.PlayerListEntry:
+		l.SetField(logoutTable, "Name", lua.LString(v.Username))
+	default:
+		fmt.Println("登出包解析失败")
+	}
+	l.Push(logoutTable)
+	return 1
 }
 
 // NextMsg 用于从监听器的消息通道中获取下一个消息
-func NextMsg(L *lua.LState) int {
-	ud := L.CheckUserData(1)         // 从Lua参数中获取UserData
-	listener := ud.Value.(*Listener) // 从UserData中提取监听器实例
-
-	msg := <-listener.MsgChannel // 从监听器的消息通道中读取下一个消息，如果没有消息，则阻塞等待
-	L.Push(lua.LString(msg.Type))
-	L.Push(lua.LString(msg.Content))
+func (f *BuiltListener) NextMsg(L *lua.LState) int {
+	msgChan := make(chan interface{}, 1)
+	msgType := definition.MSG_TYPE
+	f.RegisterPackage(&definition.PackageChan{
+		PackageType:    msgType,
+		PackageMsgChan: msgChan,
+	})
+	msg := <-msgChan
+	switch v := msg.(type) {
+	case *defines.GameChat:
+		Name := v.Name
+		newMsg := ""
+		for _, key := range v.Msg {
+			newMsg += key + " "
+		}
+		L.Push(lua.LString(Name))
+		L.Push(lua.LString(newMsg))
+		return 2
+	default:
+		fmt.Println("无法解析")
+		L.ArgError(1, "无法解析新的玩家消息")
+		L.Push(lua.LString(""))
+		L.Push(lua.LString(""))
+	}
 	return 2
 }
 
 // GetListener 创建一个新的监听器并返回其引用
 func (f *BuiltListener) GetMsgListener(L *lua.LState) int {
-	listener := &Listener{MsgChannel: make(chan Message, 25)} // 创建一个新监听器实例，并初始化其消息通道容量为25
-	ptr := &f.Listener
-	ptr.Store(listener, struct{}{}) // 将新监听器添加到监听器集合中
-
-	ud := L.NewUserData()                              // 创建一个新的UserData，用于在Lua中表示监听器实例
-	ud.Value = listener                                // 将监听器实例存储在UserData中
-	L.SetMetatable(ud, L.GetTypeMetatable("listener")) // 设置UserData的元表
-
-	L.Push(ud) // 将UserData返回给Lua
+	listener := L.NewTable()
+	L.SetField(listener, "NextMsg", L.NewFunction(f.NextMsg))
+	L.Push(listener)
 	return 1
 }

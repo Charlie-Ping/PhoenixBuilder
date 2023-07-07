@@ -5,8 +5,10 @@ go 1.18
 require (
 	github.com/cheggaaa/pb v1.0.29
 	github.com/df-mc/goleveldb v1.1.9
+	github.com/go-zeromq/zmq4 v0.15.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/pebbe/zmq4 v1.2.10
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	rogchap.com/v8go v0.7.0
 )
@@ -14,6 +16,7 @@ require (
 require (
 	github.com/atomicgo/cursor v0.0.1 // indirect
 	github.com/frankban/quicktest v1.14.5 // indirect
+	github.com/go-zeromq/goczmq/v4 v4.2.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/gookit/color v1.4.2 // indirect
 	github.com/klauspost/cpuid v1.3.1 // indirect
@@ -26,10 +29,11 @@ require (
 	github.com/templexxx/xorsimd v0.4.1 // indirect
 	github.com/tjfoc/gmsm v1.3.2 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
-	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
-	golang.org/x/mod v0.8.0 // indirect
+	golang.org/x/image v0.5.0 // indirect
+	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
+	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/sys v0.5.0 // indirect
-	golang.org/x/tools v0.6.0 // indirect
+	golang.org/x/tools v0.1.12 // indirect
 )
 
 replace rogchap.com/v8go v0.7.0 => ./depends/v8go@v0.7.0
@@ -52,10 +56,10 @@ require (
 	github.com/yuin/gopher-lua v1.1.0
 	go.kuoruan.net/v8go-polyfills v0.5.0
 	go.uber.org/atomic v1.9.0
-	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
+	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/net v0.7.0
 	golang.org/x/term v0.5.0
-	golang.org/x/text v0.10.0
+	golang.org/x/text v0.7.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 )
 

@@ -13,7 +13,6 @@ import (
 	"github.com/pterm/pterm"
 
 	"phoenixbuilder/fastbuilder/readline"
-	_ "phoenixbuilder/plantform_specific/fix_timer"
 )
 
 func setup() {
@@ -49,7 +48,7 @@ func display_info() {
 
 func check_update() {
 	fmt.Printf(I18n.T(I18n.Notice_CheckUpdate))
-	hasUpdate, latestVersion := utils.CheckUpdate(args.FBVersion)
+	hasUpdate, latestVersion := utils.CheckUpdate(args.FBPlainVersion)
 	fmt.Printf(I18n.T(I18n.Notice_OK))
 	if hasUpdate {
 		fmt.Printf(I18n.T(I18n.Notice_UpdateAvailable), latestVersion)

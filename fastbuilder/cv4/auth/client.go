@@ -43,7 +43,7 @@ func CreateClient(env *environment.PBEnvironment) *Client {
 	if err != nil {
 		panic(err)
 	}
-	salt := []byte("2345678987654321")
+	salt := []byte("23456789f7654321")
 	authclient := &Client{
 		privateKey:     privateKey,
 		salt:           salt,
@@ -108,6 +108,8 @@ func CreateClient(env *environment.PBEnvironment) *Client {
 				authclient.peerNoEncryption = true
 				authclient.SendMessage([]byte(`{"action":"accept_no_encryption"}`))
 				close(encrypted)
+			} else if msgaction == "server_message" {
+				pterm.Info.Printf("[Auth Server] %s\n", message["message"].(string))
 			}
 			select {
 			case authclient.serverResponse <- message:
@@ -164,7 +166,7 @@ type AuthRequest struct {
 	ServerPassword string `json:"serverPassword"`
 	Key            string `json:"publicKey"`
 	FBToken        string
-	VersionId      int64  `json:"version_id"`
+	VersionId      int64 `json:"version_id"`
 	//IgnoreVersionCheck bool `json:"ignore_version_check"`
 }
 
@@ -175,7 +177,9 @@ func (client *Client) Auth(ctx context.Context, serverCode string, serverPasswor
 		ServerPassword: serverPassword,
 		Key:            key,
 		FBToken:        fbtoken,
-		VersionId:      2,
+		VersionId:      4,
+		// New format of PyRpc
+
 		// ^
 		// The implemention of version_id is in no way for the purpose
 		// of blocking the access of old versions, but for saving server
@@ -189,10 +193,17 @@ func (client *Client) Auth(ctx context.Context, serverCode string, serverPasswor
 		panic("Failed to encode json")
 	}
 	client.SendMessage(msg)
+Retry:
 	select {
 	case <-ctx.Done():
 		return "", 0, fmt.Errorf("fb auth server response time out (%v)", err)
-	case resp, _ := <-client.serverResponse:
+	case resp := <-client.serverResponse:
+		_, exist := resp["code"]
+		if !exist {
+			goto Retry
+		}
+		// The first message is `{"action":"server_message","message":"欢迎, xxx !"}`,
+		// so we need to make sure that the message we get is what we want.
 		code, _ := resp["code"].(float64)
 		if code != 0 {
 			err, _ := resp["message"].(string)
@@ -309,17 +320,13 @@ func (client *Client) TransferData(content string, uid string) string {
 
 type FNumRequest struct {
 	Action string `json:"action"`
-	First  string `json:"1st"`
-	Second string `json:"2nd"`
-	Third  int64  `json:"3rd"`
+	Data string `json:"data"`
 }
 
-func (client *Client) TransferCheckNum(first string, second string, third int64) (string, string, string) {
+func (client *Client) TransferCheckNum(data string) string {
 	rspreq := &FNumRequest{
 		Action: "phoenix::transfer-check-num",
-		First:  first,
-		Second: second,
-		Third:  third,
+		Data: data,
 	}
 	msg, err := json.Marshal(rspreq)
 	if err != nil {
@@ -329,12 +336,10 @@ func (client *Client) TransferCheckNum(first string, second string, third int64)
 	resp, _ := <-client.serverResponse
 	code, _ := resp["code"].(float64)
 	if code != 0 {
-		panic(fmt.Errorf("Failed to transfer checknum: %s",resp["message"]))
+		panic(fmt.Errorf("Failed to transfer checknum: %s", resp["message"]))
 	}
-	valM, _ := resp["valM"].(string)
-	valS, _ := resp["valS"].(string)
-	valT, _ := resp["valT"].(string)
-	return valM, valS, valT
+	val, _ := resp["value"].(string)
+	return val
 }
 
 type WorldChatRequest struct {

@@ -20,6 +20,9 @@ type Resources struct {
 	Container container
 	// 管理结构资源并保存结构请求的回应
 	Structure mcstructure
+	// 管理和保存其他小型的资源，
+	// 例如例如游戏刻相关
+	Others others
 }
 
 // ------------------------- commandRequestWithResponce -------------------------
@@ -142,6 +145,16 @@ type mcstructure struct {
 	resourcesOccupy
 	// 保存结构请求的响应体
 	resp chan packet.StructureTemplateDataResponse
+}
+
+// ------------------------- others -------------------------
+
+// 记录其他小型的资源，例如游戏刻相关
+type others struct {
+	// 存放 TickSync 请求并保存其对应的返回值，
+	// 它用于获取当前的游戏刻。
+	// 数据类型为 map[uuid.UUID]chan int64
+	currentTickRequestWithResp sync.Map
 }
 
 // ------------------------- END -------------------------
